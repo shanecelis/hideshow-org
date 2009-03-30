@@ -1,0 +1,8 @@
+* hideshow-org.el
+** Need some better way of handling the documentation.  
+   Right now it's duplicated in two places in two different formats:
+   README.md and hideshow-org.el.
+** TODOs
+  - [ ] ensure it works most of the time
+  - [ ] do a screencast
+        

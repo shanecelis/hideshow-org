@@ -3,7 +3,7 @@
 ;; Copyright (C) 2009 Shane Celis
 ;;
 ;; Author: Shane Celis <shane (at) gnufoo (dot) org>
-;; Keywords: C C++ java lisp tools editing comments blocks hiding outlines org org-mode
+;; Keywords: C C++ java lisp tools editing comments blocks hiding outlines org-mode
 ;; This file is not part of GNU Emacs.
 ;;
 ;; hideshow-org.el free software; you can redistribute it and/or modify
@@ -31,6 +31,30 @@
 ;; hideshow-org.el is my attempt to bring the org-mode like hiding and
 ;; showing to code.
 ;;
+;;; Download:
+;;
+;; $ git clone git://github.com/secelis/hideshow-org.git
+;;
+;;; Installation:
+;;
+;; (add-to-list 'load-path "/path/to/hideshow-org-directory")
+;; (require 'hideshow-org)
+;; 
+;;; Keymaps:
+;;
+;; I set this as my global key.
+;;
+;; (global-set-key "\C-ch" 'hs-org/minor-mode)
+;;
+;; Here are the keys in the minor mode.
+;;
+;; TAB       -- execute normal TAB command, if point doesn't move, try to
+;;              toggle the visibility of the block.
+;; <S-tab>   -- execute normal <S-tab command, if point doesn't move, try to
+;;              toggle the visibility of all the blocks.
+;;
+;;; Notes:
+;;
 ;; The hardest part was trying to figure out when TAB should behave
 ;; normally: for code that usually means some variant of *-ident-line
 ;; (and is incidentally one of the reason I love emacs); for outlines
@@ -40,6 +64,10 @@
 ;; TAB.  Hopefully, this will be sufficient such that
 ;; hs-org/minor-mode does not get in the way of anyone's normal
 ;; programming habits.
+;; 
+;; Many thanks to the developers of hideshow.el.  Thanks to
+;; yasnippets.el for showing me how one could piggyback on an already
+;; bound key.
 
 (defvar hs-org/trigger-key-block (kbd "TAB")
   "The key to bind to toggle block visibility.")
@@ -48,7 +76,7 @@
   "The key to bind to toggle all block visibility.")
 
 (defvar hs-org/minor-mode-map nil
-  "The keymap of hs-org-minor-mode")
+  "The keymap of hs-org/minor-mode")
 
 (unless hs-org/minor-mode-map
   (setq hs-org/minor-mode-map (make-sparse-keymap)))
@@ -72,35 +100,33 @@ You can customize the key through `hs-org/trigger-key-block'."
   ;; The initial value.
   nil
   ;; The indicator for the mode line.  Nothing.  hs will already be in there.
-  "+"
+  ""
   :group 'editing
   (define-key hs-org/minor-mode-map hs-org/trigger-key-block 'hs-org/hideshow)
   (define-key hs-org/minor-mode-map hs-org/trigger-key-all 'hs-org/hideshow-all)
   ;; We want hs-minor-mode on when hs-org/minor-mode is on.
   (when (and hs-org/minor-mode (not hs-minor-mode))
       (hs-minor-mode t))
+  (let ((hs (cdr (assoc 'hs-minor-mode minor-mode-alist))))
+    (if hs-org/minor-mode
+        (setcar hs (concat (car hs) "+"))
+        (setcar hs (replace-regexp-in-string "\\+$" "" (car hs)))
+        ))
   )
 
 (defun hs-org/hideshow ()
   "Hide or show a block."
-
-  ;; How do I know when to activate this command?  When is it really a
-  ;; hide-show versus I want it to call my other command?
   (interactive)
   (let* ((last-point (point))
          (hs-org/minor-mode nil)
          (command (key-binding hs-org/trigger-key)))
     (when (commandp command)
       (call-interactively command))
-    (message "last-point %d point %d" last-point (point))
     (when (equal last-point (point))
       (hs-toggle-hiding))))
 
 (defun hs-org/hideshow-all ()
   "Hide or show all blocks."
-
-  ;; How do I know when to activate this command?  When is it really a
-  ;; hide-show versus I want it to call my other command?
   (interactive)
   (let* ((last-point (point))
          (hs-org/minor-mode nil)
@@ -112,15 +138,5 @@ You can customize the key through `hs-org/trigger-key-block'."
           (hs-show-all)
           (hs-hide-all))
       (setq hs-org/hide-show-all-next (not hs-org/hide-show-all-next)))))
-
-;; (defun hs-org/minor-mode-on ()
-;;   (interactive)
-;;   (hs-minor-mode 1)
-;;   (hs-org/minor-mode 1))
-
-;; (defun hs-org/minor-mode-off ()
-;;   (interactive)
-;;   (hs-minor-mode -1)
-;;   (hs-org/minor-mode -1))
   
 (provide 'hideshow-org)
