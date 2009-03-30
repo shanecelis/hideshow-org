@@ -110,16 +110,15 @@ You can customize the key through `hs-org/trigger-key-block'."
   (let ((hs (cdr (assoc 'hs-minor-mode minor-mode-alist))))
     (if hs-org/minor-mode
         (setcar hs (concat (car hs) "+"))
-        (setcar hs (replace-regexp-in-string "\\+$" "" (car hs)))
-        ))
-  )
+        (setcar hs (replace-regexp-in-string "\\++$" "" (car hs)))
+        )))
 
 (defun hs-org/hideshow ()
   "Hide or show a block."
   (interactive)
   (let* ((last-point (point))
          (hs-org/minor-mode nil)
-         (command (key-binding hs-org/trigger-key)))
+         (command (key-binding hs-org/trigger-key-block)))
     (when (commandp command)
       (call-interactively command))
     (when (equal last-point (point))
