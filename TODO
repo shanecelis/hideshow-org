@@ -1,9 +1,33 @@
 * hideshow-org.el
 ** Need some better way of handling the documentation.  
    Right now it's duplicated in two places in two different formats:
-   README.md and hideshow-org.el.
+   README.md and hideshow-org.el.  Violates the DRY principle.
+*** Possible Solutions
+**** Keep README
+**** Generate README from initial comments.
 ** TODOs
   - [ ] ensure it works most of the time
-  - [ ] do a screencast
+  - [X] do a screencast
+  - [X] fix up so it works with multiple keys
+  - [ ] problem with java 
+
+        It folds the whole class when you only want it to fold a
+        method.  Actually, if one tabs near the curly brace, it'll
+        fold the method.
+  - [X] folds aren't remembered
+
+        If I fold a method, then fold a class, when I unfold the
+        class, it unfolds everything.
         
-        
+        Actually, hideshow.el does take care of this.  It's just not a
+        custom variable, but if you add this to your .emacs, it'll
+        work.
+
+            (setq hs-allow-nesting t)
+
+  - [ ] undo can change stuff inside a fold, which is kind of nasty
+    behavior.  It should unfold if the text inside the changes.
+  - [X] is hs-org/minor-mode a local buffer thing or not?  It is a
+    local buffer thing now.
+
+  

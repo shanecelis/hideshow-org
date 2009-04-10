@@ -50,7 +50,7 @@
 ;;
 ;; TAB       -- execute normal TAB command, if point doesn't move, try to
 ;;              toggle the visibility of the block.
-;; <S-tab>   -- execute normal <S-tab command, if point doesn't move, try to
+;; <S-tab>   -- execute normal <S-tab> command, if point doesn't move, try to
 ;;              toggle the visibility of all the blocks.
 ;;
 ;;; Notes:
@@ -69,14 +69,17 @@
 ;; yasnippets.el for showing me how one could piggyback on an already
 ;; bound key.
 
-(defvar hs-org/trigger-key-block (kbd "TAB")
-  "The key to bind to toggle block visibility.")
+(defvar hs-org/trigger-keys-block (list (kbd "TAB"))
+  "The keys to bind to toggle block visibility.")
 
-(defvar hs-org/trigger-key-all (kbd "<S-tab>")
-  "The key to bind to toggle all block visibility.")
+(defvar hs-org/trigger-keys-all (list [S-tab] [S-iso-lefttab] [(shift tab)] [backtab])
+  "The keys to bind to toggle all block visibility.")
 
 (defvar hs-org/minor-mode-map nil
   "The keymap of hs-org/minor-mode")
+
+(defvar hs-org/started-hideshow-p nil
+  "Did I start hideshow when my minor mode was invoked?")
 
 (unless hs-org/minor-mode-map
   (setq hs-org/minor-mode-map (make-sparse-keymap)))
@@ -84,10 +87,27 @@
 (defvar hs-org/hide-show-all-next nil
   "Keeps the state of how the buffer was last toggled by Shift TABing.")
 
-(make-variable-buffer-local 'hs-org/hide-show-all-next)
+;; (defvar hs-org/last-point nil
+;;   "Last point when hiding was invoked.")
+
+(dolist (var '(hs-org/minor-mode
+               hs-org/hide-show-all-next
+               hs-org/started-hideshow-p))
+  (make-variable-buffer-local var))
+
+(defmacro hs-org/define-keys ()
+  `(progn 
+     ,@(mapcar (lambda (key) `(hs-org/define-key ,key hs-org/hideshow)) hs-org/trigger-keys-block)
+     ,@(mapcar (lambda (key) `(hs-org/define-key ,key hs-org/hideshow-all)) hs-org/trigger-keys-all)
+    ))
+
+;; No closures is killing me!
+(defmacro hs-org/define-key (key function)
+  `(define-key hs-org/minor-mode-map ,key (lambda () (interactive)
+                                                  (,function ,key))))
 
 (define-minor-mode hs-org/minor-mode
-  "Toggle hs-org minor mode.
+    "Toggle hs-org minor mode.
 With no argument, this command toggles the mode.
 positive prefix argument turns on the mode.
 Negative prefix argument turns off the mode.
@@ -102,34 +122,73 @@ You can customize the key through `hs-org/trigger-key-block'."
   ;; The indicator for the mode line.  Nothing.  hs will already be in there.
   ""
   :group 'editing
-  (define-key hs-org/minor-mode-map hs-org/trigger-key-block 'hs-org/hideshow)
-  (define-key hs-org/minor-mode-map hs-org/trigger-key-all 'hs-org/hideshow-all)
+
+  (hs-org/define-keys)
   ;; We want hs-minor-mode on when hs-org/minor-mode is on.
-  (when (and hs-org/minor-mode (not hs-minor-mode))
-      (hs-minor-mode t))
+  (if hs-org/minor-mode
+      ;; hs-org/minor-mode was turned on.
+      (if (not hs-minor-mode)
+          (progn (condition-case err
+                     (hs-minor-mode t)
+                   ;; Catch the error, and handle it.
+                   (error 
+                    ;; If we can't turn on hideshow, we can't turn on
+                    ;; hs-org.
+                    (hs-org/minor-mode nil)
+                    (error "hs-org: %s" (cadr err))))
+                 (setq hs-org/started-hideshow-p t))
+          (setq hs-org/started-hideshow-p nil))
+      ;; hs-org/minor-mode was turned off.
+      (when hs-org/started-hideshow-p
+        (condition-case err 
+            (hs-minor-mode nil)
+          (error (error "hs-org: %s" (cadr err))))))
   (let ((hs (cdr (assoc 'hs-minor-mode minor-mode-alist))))
     (if hs-org/minor-mode
-        (setcar hs (concat (car hs) "+"))
-        (setcar hs (replace-regexp-in-string "\\++$" "" (car hs)))
-        )))
+        (setcar hs (replace-regexp-in-string "\\+*$" "+" (car hs)))
+        (setcar hs (replace-regexp-in-string "\\++$" "" (car hs))))))
 
-(defun hs-org/hideshow ()
+(defun hs-org/hideshow (&optional key)
   "Hide or show a block."
   (interactive)
   (let* ((last-point (point))
          (hs-org/minor-mode nil)
-         (command (key-binding hs-org/trigger-key-block)))
+         (command (key-binding key))
+         (other-keys hs-org/trigger-keys-block))
+    (while (and (null command)
+                (not (null other-keys)))
+      (setq command (key-binding (car other-keys)))
+      (setq other-keys (cdr other-keys)))
     (when (commandp command)
       (call-interactively command))
     (when (equal last-point (point))
-      (hs-toggle-hiding))))
+      (hs-toggle-hiding)
+      ;; I was thinking about trying to do some kind of thing where
+      ;; the point that you were at in the hidden block would be
+      ;; saved, but I think that'd best be addressed by hideshow.el
+      ;; directly.
 
-(defun hs-org/hideshow-all ()
+;;       (hs-life-goes-on
+;;        (if (hs-already-hidden-p)
+;;            (progn 
+;;              (hs-show-block)
+;;              (when hs-org/last-point
+;;                (goto-char hs-org/last-point)))
+;;            (setq hs-org/last-point (point))
+;;           (hs-hide-block)))
+      )))
+
+(defun hs-org/hideshow-all (&optional key)
   "Hide or show all blocks."
   (interactive)
   (let* ((last-point (point))
          (hs-org/minor-mode nil)
-         (command (key-binding hs-org/trigger-key-all)))
+         (command (key-binding key))
+         (other-keys hs-org/trigger-keys-all))
+    (while (and (null command)
+                (not (null other-keys)))
+      (setq command (key-binding (car other-keys)))
+      (setq other-keys (cdr other-keys)))
     (when (commandp command)
       (call-interactively command))
     (when (equal last-point (point))
