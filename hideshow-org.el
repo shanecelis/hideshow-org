@@ -69,6 +69,8 @@
 ;; yasnippets.el for showing me how one could piggyback on an already
 ;; bound key.
 
+(require 'hideshow)
+
 (defvar hs-org/trigger-keys-block (list (kbd "TAB"))
   "The keys to bind to toggle block visibility.")
 
