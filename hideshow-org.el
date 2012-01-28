@@ -1,4 +1,4 @@
-;;; hideshow-org.el - Provides org-mode like hide and show for hideshow.el
+;;; hideshow-org.el --- Provides org-mode like hide and show for hideshow.el
 ;;
 ;; Copyright (C) 2009 Shane Celis
 ;;
