@@ -101,7 +101,7 @@
   `(progn 
      ,@(mapcar (lambda (key) `(hs-org/define-key ,key hs-org/hideshow)) hs-org/trigger-keys-block)
      ,@(mapcar (lambda (key) `(hs-org/define-key ,key hs-org/hideshow-all)) hs-org/trigger-keys-all)
-    ))
+     ))
 
 ;; No closures is killing me!
 (defmacro hs-org/define-key (key function)
@@ -124,7 +124,7 @@ You can customize the key through `hs-org/trigger-key-block'."
   ;; The indicator for the mode line.  Nothing.  hs will already be in there.
   ""
   :group 'editing
-
+  
   (hs-org/define-keys)
   ;; We want hs-minor-mode on when hs-org/minor-mode is on.
   (if hs-org/minor-mode
@@ -139,7 +139,7 @@ You can customize the key through `hs-org/trigger-key-block'."
                     (hs-org/minor-mode nil)
                     (error "hs-org: %s" (cadr err))))
                  (setq hs-org/started-hideshow-p t))
-          (setq hs-org/started-hideshow-p nil))
+        (setq hs-org/started-hideshow-p nil))
       ;; hs-org/minor-mode was turned off.
       (when hs-org/started-hideshow-p
         (condition-case err 
@@ -163,13 +163,14 @@ You can customize the key through `hs-org/trigger-key-block'."
       (setq other-keys (cdr other-keys)))
     (when (commandp command)
       (call-interactively command))
-    (when (equal last-point (point))
+    (when (and (equal last-point (point))
+               (not mark-active))
       (hs-toggle-hiding)
       ;; I was thinking about trying to do some kind of thing where
       ;; the point that you were at in the hidden block would be
       ;; saved, but I think that'd best be addressed by hideshow.el
       ;; directly.
-
+      
 ;;       (hs-life-goes-on
 ;;        (if (hs-already-hidden-p)
 ;;            (progn 
